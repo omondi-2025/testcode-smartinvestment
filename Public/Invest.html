@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Invest</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .plan {
+      cursor: pointer;
+      margin: 8px;
+      padding: 12px;
+      border: 1px solid #ccc;
+      display: inline-block;
+      border-radius: 5px;
+      background: #f8f9fa;
+    }
+
+    .plan.selected {
+      background-color: #28a745;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Select an Investment Plan</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </header>
+
+  <main class="form-container">
+    <div id="plans">
+      <div class="plan" data-amount="400">Invest 400</div>
+      <div class="plan" data-amount="800">Invest 800</div>
+      <div class="plan" data-amount="1500">Invest 1,500</div>
+      <div class="plan" data-amount="2500">Invest 2,500</div>
+      <div class="plan" data-amount="4500">Invest 4,500</div>
+      <div class="plan" data-amount="7000">Invest 7,000</div>
+      <div class="plan" data-amount="15000">Invest 15,000</div>
+      <div class="plan" data-amount="25000">Invest 25,000</div>
+    </div>
+
+    <form id="investForm">
+      <label for="amount">Selected Amount:</label>
+      <input type="number" id="amount" name="amount" readonly required />
+      <button type="submit">Invest Now</button>
+    </form>
+  </main>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = 'auth.html';
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Please log in first.");
+      window.location.href = 'auth.html';
+    }
+
+    // Handle plan selection
+    const plans = document.querySelectorAll('.plan');
+    const amountInput = document.getElementById('amount');
+
+    plans.forEach(plan => {
+      plan.addEventListener('click', () => {
+        plans.forEach(p => p.classList.remove('selected'));
+        plan.classList.add('selected');
+        amountInput.value = plan.getAttribute('data-amount');
+      });
+    });
+
+    // Handle form submission
+    document.getElementById('investForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const amount = parseInt(amountInput.value);
+
+      if (!amount) {
+        alert('Please select an investment plan.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/invest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token
+          },
+          body: JSON.stringify({ amount })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert("Investment successful!");
+          window.location.href = "dashboard.html";
+        } else {
+          alert(data.error || "Investment failed.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Something went wrong. Try again later.");
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Wallet - Trustcode</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logout-btn {
+      float: right;
+      margin-top: -40px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .wallet-box {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin: auto;
+    }
+    .balance {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      color: #28a745;
+    }
+    .btn-group {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .btn {
+      background-color: #007bff;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #0056b3;
+    }
+    .transactions {
+      margin-top: 20px;
+    }
+    .transaction {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .transaction:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Wallet</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </header>
+
+  <main class="wallet-box">
+    <div class="balance" id="walletBalance">Loading balance...</div>
+
+    <div class="btn-group">
+      <button class="btn" onclick="recharge()">Recharge</button>
+      <button class="btn" onclick="withdraw()">Withdraw</button>
+    </div>
+
+    <div class="transactions">
+      <h3>Recent Transactions</h3>
+      <div id="transactionList">Loading transactions...</div>
+    </div>
+  </main>
+
+  <script>
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('email');
+      window.location.href = 'auth.html';
+    }
+
+    function recharge() {
+      window.location.href = 'recharge.html';
+    }
+
+    function withdraw() {
+      window.location.href = 'withdrawal.html';
+    }
+
+    const token = localStorage.getItem('token');
+    const email = localStorage.getItem('email');
+    if (!token || !email) {
+      alert("Please log in first.");
+      window.location.href = 'auth.html';
+    }
+
+    // Fetch wallet balance
+    fetch('/api/balance', {
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.balance !== undefined) {
+        document.getElementById('walletBalance').textContent = `Wallet Balance: KES ${data.balance.toFixed(2)}`;
+      } else {
+        document.getElementById('walletBalance').textContent = "Failed to load balance.";
+      }
+    })
+    .catch(() => {
+      document.getElementById('walletBalance').textContent = "Failed to load balance.";
+    });
+
+    // Fetch transaction history
+    fetch('/api/transactions', {
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(res => res.json())
+    .then(transactions => {
+      const container = document.getElementById('transactionList');
+      if (!Array.isArray(transactions) || transactions.length === 0) {
+        container.innerHTML = "<p>No transactions yet.</p>";
+        return;
+      }
+
+      container.innerHTML = '';
+      transactions.forEach(tx => {
+        const div = document.createElement('div');
+        div.className = 'transaction';
+        div.innerHTML = `
+          <strong>Type:</strong> ${tx.type} <br/>
+          <strong>Amount:</strong> KES ${tx.amount} <br/>
+          <strong>Date:</strong> ${new Date(tx.timestamp).toLocaleString()}
+        `;
+        container.appendChild(div);
+      });
+    })
+    .catch(() => {
+      document.getElementById('transactionList').innerHTML = "Failed to load transactions.";
+    });
+  </script>
+</body>
+</html>

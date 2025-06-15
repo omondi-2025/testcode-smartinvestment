@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Withdraw Funds - Trustcode</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #007bff;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logout-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    main.form-container {
+      max-width: 500px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border-radius: 10px;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    input[type="number"] {
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button[type="submit"] {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 0.75rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button[type="submit"]:hover {
+      background: #218838;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Withdraw Funds</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </header>
+
+  <main class="form-container">
+    <form id="withdrawForm">
+      <label for="amount">Withdrawal Amount (Min KES 50):</label>
+      <input type="number" id="amount" required min="50" />
+      <button type="submit">Withdraw Now</button>
+    </form>
+  </main>
+
+  <script>
+    // Protect access
+    const token = localStorage.getItem('token');
+    const email = localStorage.getItem('email');
+    if (!token || !email) {
+      alert("Please log in first.");
+      window.location.href = 'auth.html';
+    }
+
+    function logout() {
+      if (confirm("Are you sure you want to logout?")) {
+        localStorage.clear();
+        window.location.href = 'auth.html';
+      }
+    }
+
+    document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = parseInt(document.getElementById('amount').value);
+
+      if (isNaN(amount) || amount < 50) {
+        alert("Minimum withdrawal is KES 50.");
+        return;
+      }
+
+      const confirmation = confirm(`You're withdrawing KES ${amount}. After a 20% fee, you'll receive KES ${Math.floor(amount * 0.8)}. Continue?`);
+      if (!confirmation) return;
+
+      try {
+        const res = await fetch('/api/withdraw', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token
+          },
+          body: JSON.stringify({ amount })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert(`✅ Withdrawal successful!\nAmount received: KES ${data.received}`);
+          document.getElementById('withdrawForm').reset();
+        } else {
+          alert(`❌ Withdrawal failed: ${data.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("❌ Network error. Please try again later.");
+      }
+    });
+  </script>
+</body>
+</html>

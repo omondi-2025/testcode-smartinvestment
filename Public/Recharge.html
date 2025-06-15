@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Recharge Wallet - Trustcode</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #007bff;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logout-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    main.form-container {
+      max-width: 500px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    input[type="number"] {
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button[type="submit"] {
+      padding: 0.75rem;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button[type="submit"]:hover {
+      background: #218838;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Recharge Wallet</h1>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </header>
+
+  <main class="form-container">
+    <form id="rechargeForm">
+      <label for="amount">Recharge Amount (Min KES 200):</label>
+      <input type="number" id="amount" required min="200" />
+      <button type="submit">Recharge Now</button>
+    </form>
+  </main>
+
+  <script>
+    // Protect access
+    const token = localStorage.getItem('token');
+    const email = localStorage.getItem('email');
+    if (!token || !email) {
+      alert("Please log in first.");
+      window.location.href = 'auth.html';
+    }
+
+    function logout() {
+      if (confirm("Are you sure you want to logout?")) {
+        localStorage.clear();
+        window.location.href = 'auth.html';
+      }
+    }
+
+    document.getElementById('rechargeForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const amount = parseInt(document.getElementById('amount').value);
+
+      if (isNaN(amount) || amount < 200) {
+        alert("⚠️ Minimum recharge is KES 200.");
+        return;
+      }
+
+      const confirmRecharge = confirm(`You are about to recharge KES ${amount}. Continue?`);
+      if (!confirmRecharge) return;
+
+      try {
+        const res = await fetch('/api/recharge', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token
+          },
+          body: JSON.stringify({ amount })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert(`✅ Recharge successful!\nNew Balance: KES ${data.newBalance}`);
+          document.getElementById('rechargeForm').reset();
+        } else {
+          alert(`❌ Recharge failed: ${data.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error(err);
+        alert("❌ Network error. Please try again later.");
+      }
+    });
+  </script>
+</body>
+</html>

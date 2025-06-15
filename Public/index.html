@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Investment Platform</title>
+  <style>
+    button {
+      background: #28a745;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #218838;
+    }
+    .plan {
+      cursor: pointer;
+      margin: 5px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      display: inline-block;
+      border-radius: 5px;
+    }
+    .plan.selected {
+      background-color: #28a745;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Investment Platform</h1>
+  </header>
+  <main>
+    <section id="plans">
+      <h2>Select an Investment Plan</h2>
+      <div class="plan" data-amount="400">Invest 400</div>
+      <div class="plan" data-amount="800">Invest 800</div>
+      <div class="plan" data-amount="1500">Invest 1,500</div>
+      <div class="plan" data-amount="2500">Invest 2,500</div>
+      <div class="plan" data-amount="4500">Invest 4,500</div>
+      <div class="plan" data-amount="7000">Invest 7,000</div>
+      <div class="plan" data-amount="15000">Invest 15,000</div>
+      <div class="plan" data-amount="25000">Invest 25,000</div>
+    </section>
+
+    <section id="investment-form">
+      <h2>Investment Details</h2>
+      <form id="investForm">
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" name="amount" readonly required />
+        <button type="submit">Invest Now</button>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    // Plan selection
+    const plans = document.querySelectorAll('.plan');
+    const amountInput = document.getElementById('amount');
+
+    plans.forEach(plan => {
+      plan.addEventListener('click', () => {
+        plans.forEach(p => p.classList.remove('selected'));
+        plan.classList.add('selected');
+        amountInput.value = plan.getAttribute('data-amount');
+      });
+    });
+
+    // Investment form submission
+    document.getElementById('investForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const amount = amountInput.value;
+
+      if (!amount) {
+        alert('Please select an investment plan first.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/invest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ amount: Number(amount) }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          alert(`Investment successful! ID: ${data.insertedId}`);
+          amountInput.value = '';
+          plans.forEach(p => p.classList.remove('selected'));
+        } else {
+          alert('Failed to save investment. Try again later.');
+        }
+      } catch (error) {
+        alert('Error submitting investment: ' + error.message);
+      }
+    });
+  </script>
+</body>
+</html>

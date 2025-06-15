@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - Trustcode</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .btn:hover {
+      background: #0056b3;
+    }
+    .plan {
+      cursor: pointer;
+      margin: 5px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      display: inline-block;
+      border-radius: 5px;
+    }
+    .plan.selected {
+      background-color: #28a745;
+      color: white;
+    }
+    header {
+      text-align: center;
+      padding: 10px;
+      background: #f0f0f0;
+    }
+    #userEmail {
+      font-size: 0.9rem;
+      color: #555;
+    }
+    main {
+      padding: 1rem;
+      max-width: 800px;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Welcome to Trustcode Dashboard</h1>
+    <p id="userEmail"></p>
+    <button class="btn" onclick="logout()">Logout</button>
+  </header>
+
+  <main>
+    <section>
+      <h2>Select an Investment Plan</h2>
+      <div class="plan" data-amount="400">Invest 400</div>
+      <div class="plan" data-amount="800">Invest 800</div>
+      <div class="plan" data-amount="1500">Invest 1,500</div>
+      <div class="plan" data-amount="2500">Invest 2,500</div>
+      <div class="plan" data-amount="4500">Invest 4,500</div>
+      <div class="plan" data-amount="7000">Invest 7,000</div>
+      <div class="plan" data-amount="15000">Invest 15,000</div>
+      <div class="plan" data-amount="25000">Invest 25,000</div>
+    </section>
+
+    <section>
+      <h2>Investment</h2>
+      <form id="investForm">
+        <label for="amount">Amount:</label>
+        <input type="number" id="amount" name="amount" readonly required />
+        <button class="btn" type="submit">Invest Now</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Other Actions</h2>
+      <button class="btn" onclick="withdraw()">Withdraw</button>
+      <button class="btn" onclick="recharge()">Recharge</button>
+      <button class="btn" onclick="invite()">Invite & Earn</button>
+    </section>
+  </main>
+
+  <script>
+    // Display logged in user's email
+    const userEmail = localStorage.getItem('email');
+    if (!userEmail) {
+      alert('Session expired or not logged in. Redirecting to login...');
+      window.location.href = 'auth.html';
+    } else {
+      document.getElementById('userEmail').textContent = "Logged in as: " + userEmail;
+    }
+
+    // Plan selection logic
+    const plans = document.querySelectorAll('.plan');
+    const amountInput = document.getElementById('amount');
+
+    plans.forEach(plan => {
+      plan.addEventListener('click', () => {
+        plans.forEach(p => p.classList.remove('selected'));
+        plan.classList.add('selected');
+        amountInput.value = plan.getAttribute('data-amount');
+      });
+    });
+
+    // Submit investment
+    document.getElementById('investForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const amount = amountInput.value;
+
+      if (!amount || !userEmail) {
+        alert('Please select an investment plan and login.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/invest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: Number(amount), email: userEmail })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('✅ Investment successful! Ref ID: ' + data.insertedId);
+          amountInput.value = '';
+          plans.forEach(p => p.classList.remove('selected'));
+        } else {
+          alert('❌ Investment failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('❌ Error: ' + err.message);
+      }
+    });
+
+    function withdraw() {
+      window.location.href = 'withdrawal.html';
+    }
+
+    function recharge() {
+      window.location.href = 'recharge.html';
+    }
+
+    function invite() {
+      const link = `${window.location.origin}/auth.html?ref=${userEmail}`;
+      navigator.clipboard.writeText(link)
+        .then(() => alert('✅ Invite link copied:\n' + link))
+        .catch(() => alert('❌ Could not copy invite link.'));
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'auth.html';
+    }
+  </script>
+</body>
+</html>

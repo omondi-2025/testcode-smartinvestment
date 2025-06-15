@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auth - Login & Signup</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="form-container">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <input type="email" id="loginEmail" placeholder="Email" required />
+      <input type="password" id="loginPassword" placeholder="Password" required />
+      <button type="submit">Login</button>
+    </form>
+
+    <hr />
+
+    <h2>Signup</h2>
+    <form id="signupForm">
+      <input type="text" id="signupName" placeholder="Full Name" required />
+      <input type="text" id="signupPhone" placeholder="Phone Number" required />
+      <input type="email" id="signupEmail" placeholder="Email" required />
+      <input type="password" id="signupPassword" placeholder="Password" required />
+      <button type="submit">Sign Up</button>
+    </form>
+  </div>
+
+  <script>
+    // Helper: extract referral email from URL if present
+    function getReferralEmail() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('ref') || null;
+    }
+
+    // LOGIN
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem('token', data.token || 'mock-token');
+          localStorage.setItem('email', email); // store for investment use
+          window.location.href = 'dashboard.html';
+        } else {
+          alert(data.error || 'Login failed');
+        }
+      } catch (err) {
+        console.error('Login Error:', err);
+        alert('An error occurred. Please try again.');
+      }
+    });
+
+    // SIGNUP
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fullName = document.getElementById('signupName').value;
+      const phone = document.getElementById('signupPhone').value;
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+      const referredBy = getReferralEmail();
+
+      try {
+        const res = await fetch('/api/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fullName, phone, email, password, referredBy })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('Signup successful! You can now login.');
+          document.getElementById('signupForm').reset();
+        } else {
+          alert(data.error || 'Signup failed');
+        }
+      } catch (err) {
+        console.error('Signup Error:', err);
+        alert('An error occurred. Please try again.');
+      }
+    });
+  </script>
+</body>
+</html>
