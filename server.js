@@ -4,13 +4,17 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const { MongoClient } = require('mongodb');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// MongoDB connection URI
-const uri = "mongodb+srv://omondoclinton0:oflatkZzNnlVvJK5@cluster0.juksq8h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-const client = new MongoClient(uri);
+// MongoDB connection URI from environment variable
+const uri = process.env.MONGODB_URI;
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
 let db;
 let usersCollection;

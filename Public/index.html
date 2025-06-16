@@ -5,46 +5,114 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Investment Platform</title>
   <style>
-    button {
-      background: #28a745;
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #007bff;
       color: white;
-      padding: 0.5rem 1rem;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
+      padding: 1rem 0;
+      text-align: center;
     }
-    button:hover {
-      background: #218838;
+
+    main {
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
+
+    h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    #plans {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
     .plan {
       cursor: pointer;
-      margin: 5px;
-      padding: 10px;
-      border: 1px solid #ccc;
+      margin: 8px;
+      padding: 12px 20px;
+      border: 2px solid #ccc;
+      border-radius: 6px;
       display: inline-block;
-      border-radius: 5px;
+      background-color: #f9f9f9;
+      transition: all 0.2s ease-in-out;
     }
+
+    .plan:hover {
+      border-color: #007bff;
+    }
+
     .plan.selected {
       background-color: #28a745;
       color: white;
+      border-color: #28a745;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    input[type="number"] {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      background: #28a745;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #218838;
+    }
+
+    @media (max-width: 480px) {
+      .plan {
+        display: block;
+        width: 100%;
+      }
+
+      main {
+        margin: 15px;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Investment Platform</h1>
+    <h1>Trustcode Investment</h1>
   </header>
+
   <main>
     <section id="plans">
       <h2>Select an Investment Plan</h2>
-      <div class="plan" data-amount="400">Invest 400</div>
-      <div class="plan" data-amount="800">Invest 800</div>
-      <div class="plan" data-amount="1500">Invest 1,500</div>
-      <div class="plan" data-amount="2500">Invest 2,500</div>
-      <div class="plan" data-amount="4500">Invest 4,500</div>
-      <div class="plan" data-amount="7000">Invest 7,000</div>
-      <div class="plan" data-amount="15000">Invest 15,000</div>
-      <div class="plan" data-amount="25000">Invest 25,000</div>
+      <div class="plan" data-amount="400">KES 400</div>
+      <div class="plan" data-amount="800">KES 800</div>
+      <div class="plan" data-amount="1500">KES 1,500</div>
+      <div class="plan" data-amount="2500">KES 2,500</div>
+      <div class="plan" data-amount="4500">KES 4,500</div>
+      <div class="plan" data-amount="7000">KES 7,000</div>
+      <div class="plan" data-amount="15000">KES 15,000</div>
+      <div class="plan" data-amount="25000">KES 25,000</div>
     </section>
 
     <section id="investment-form">
@@ -58,7 +126,6 @@
   </main>
 
   <script>
-    // Plan selection
     const plans = document.querySelectorAll('.plan');
     const amountInput = document.getElementById('amount');
 
@@ -70,7 +137,6 @@
       });
     });
 
-    // Investment form submission
     document.getElementById('investForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       const amount = amountInput.value;
@@ -91,14 +157,14 @@
 
         if (res.ok) {
           const data = await res.json();
-          alert(`Investment successful! ID: ${data.insertedId}`);
+          alert(`✅ Investment successful! Transaction ID: ${data.insertedId}`);
           amountInput.value = '';
           plans.forEach(p => p.classList.remove('selected'));
         } else {
-          alert('Failed to save investment. Try again later.');
+          alert('❌ Investment failed. Please try again.');
         }
       } catch (error) {
-        alert('Error submitting investment: ' + error.message);
+        alert('⚠️ Error submitting investment: ' + error.message);
       }
     });
   </script>
