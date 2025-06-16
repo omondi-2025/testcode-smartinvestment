@@ -9,10 +9,10 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MongoDB URI
+// ✅ Check MongoDB URI
 const uri = process.env.MONGODB_URI;
 if (!uri) {
-  console.error("❌ MONGODB_URI not found in .env");
+  console.error("❌ MONGODB_URI not found in .env file.");
   process.exit(1);
 }
 
@@ -24,15 +24,21 @@ const client = new MongoClient(uri, {
 let db;
 let usersCollection;
 
+// ✅ Middleware
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// Serve index.html at root
+// ✅ Serve frontend
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Connect to MongoDB
+// ✅ Health check for Render
+app.get('/health', (req, res) => {
+  res.send('OK');
+});
+
+// ✅ Connect to MongoDB
 async function connectDB() {
   try {
     await client.connect();
@@ -45,7 +51,7 @@ async function connectDB() {
 }
 connectDB();
 
-// Signup with referral
+// ✅ Signup with referral
 app.post('/api/signup', async (req, res) => {
   try {
     const { fullName, phone, email, password, referralCode } = req.body;
@@ -85,7 +91,7 @@ app.post('/api/signup', async (req, res) => {
   }
 });
 
-// Login route
+// ✅ Login route
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -102,7 +108,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Investment with referral commission
+// ✅ Investment with referral commission
 app.post('/invest', async (req, res) => {
   try {
     const { amount, email } = req.body;
@@ -122,7 +128,7 @@ app.post('/invest', async (req, res) => {
       { $inc: { balance: amount } }
     );
 
-    // Handle referral commission
+    // Referral commission
     const user = await usersCollection.findOne({ email });
     if (user?.referrer) {
       const commission = amount * 0.2;
@@ -140,7 +146,7 @@ app.post('/invest', async (req, res) => {
         { $inc: { balance: commission } }
       );
 
-      console.log(`✅ Commission of KES ${commission} sent to ${user.referrer}`);
+      console.log(`✅ KES ${commission} commission sent to ${user.referrer}`);
     }
 
     res.status(201).json({ message: 'Investment successful' });
@@ -150,7 +156,7 @@ app.post('/invest', async (req, res) => {
   }
 });
 
-// Balance check
+// ✅ Wallet balance
 app.get('/api/balance', async (req, res) => {
   const email = req.headers.email || req.query.email;
   if (!email) return res.status(401).json({ error: 'Email required' });
@@ -161,12 +167,12 @@ app.get('/api/balance', async (req, res) => {
 
     res.json({ balance: user.balance || 0 });
   } catch (err) {
-    console.error('❌ Balance error:', err);
-    res.status(500).json({ error: 'Could not retrieve balance' });
+    console.error('❌ Balance fetch error:', err);
+    res.status(500).json({ error: 'Could not fetch balance' });
   }
 });
 
-// Transactions history
+// ✅ Transaction history
 app.get('/api/transactions', async (req, res) => {
   const email = req.headers.email || req.query.email;
   if (!email) return res.status(401).json({ error: 'Email required' });
@@ -180,12 +186,12 @@ app.get('/api/transactions', async (req, res) => {
 
     res.json(transactions);
   } catch (err) {
-    console.error('❌ Transaction fetch error:', err);
-    res.status(500).json({ error: 'Failed to fetch transactions' });
+    console.error('❌ Transaction error:', err);
+    res.status(500).json({ error: 'Could not fetch transactions' });
   }
 });
 
-// Start server
+// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
