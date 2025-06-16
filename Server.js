@@ -9,8 +9,13 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MongoDB connection URI from environment variable
+// MongoDB URI
 const uri = process.env.MONGODB_URI;
+if (!uri) {
+  console.error("❌ MONGODB_URI not found in .env");
+  process.exit(1);
+}
+
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -20,11 +25,9 @@ let db;
 let usersCollection;
 
 app.use(bodyParser.json());
-
-// Serve static files from public folder
 app.use(express.static('public'));
 
-// ✅ Serve index.html when root URL is accessed
+// Serve index.html at root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -42,11 +45,10 @@ async function connectDB() {
 }
 connectDB();
 
-// ✅ Signup Route with referral
+// Signup with referral
 app.post('/api/signup', async (req, res) => {
   try {
     const { fullName, phone, email, password, referralCode } = req.body;
-
     if (!fullName || !phone || !email || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -76,20 +78,19 @@ app.post('/api/signup', async (req, res) => {
     };
 
     await usersCollection.insertOne(newUser);
-
     res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     console.error('❌ Signup error:', error);
-    res.status(500).json({ error: 'Internal server error during signup' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// ✅ Login Route
+// Login route
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const user = await usersCollection.findOne({ email });
+
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
@@ -97,40 +98,37 @@ app.post('/api/login', async (req, res) => {
     res.json({ message: 'Login successful', email: user.email });
   } catch (error) {
     console.error('❌ Login error:', error);
-    res.status(500).json({ error: 'Internal server error during login' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// ✅ Investment Route with referral commission
+// Investment with referral commission
 app.post('/invest', async (req, res) => {
   try {
     const { amount, email } = req.body;
     if (!amount || amount < 200) {
-      return res.status(400).json({ error: 'Invalid investment amount' });
+      return res.status(400).json({ error: 'Minimum investment is KES 200' });
     }
 
     const investments = db.collection('investments');
-    const investment = {
+    await investments.insertOne({
       amount,
       timestamp: new Date(),
-      userEmail: email || 'guest@example.com'
-    };
+      userEmail: email
+    });
 
-    const result = await investments.insertOne(investment);
-
-    // Update user balance
     await usersCollection.updateOne(
       { email },
       { $inc: { balance: amount } }
     );
 
-    // Send referral commission
+    // Handle referral commission
     const user = await usersCollection.findOne({ email });
-    if (user && user.referrer) {
-      const commission = amount * 0.20;
-      const commissionsCollection = db.collection('commissions');
+    if (user?.referrer) {
+      const commission = amount * 0.2;
+      const commissions = db.collection('commissions');
 
-      await commissionsCollection.insertOne({
+      await commissions.insertOne({
         referrerEmail: user.referrer,
         referredEmail: email,
         commissionAmount: commission,
@@ -142,21 +140,20 @@ app.post('/invest', async (req, res) => {
         { $inc: { balance: commission } }
       );
 
-      console.log(`✅ Commission of KES ${commission} given to ${user.referrer}`);
+      console.log(`✅ Commission of KES ${commission} sent to ${user.referrer}`);
     }
 
-    res.status(201).json({ message: 'Investment successful', insertedId: result.insertedId });
+    res.status(201).json({ message: 'Investment successful' });
   } catch (error) {
     console.error('❌ Investment error:', error);
-    res.status(500).json({ error: 'Internal server error during investment' });
+    res.status(500).json({ error: 'Investment failed' });
   }
 });
 
-// ✅ Wallet Balance Route
+// Balance check
 app.get('/api/balance', async (req, res) => {
   const email = req.headers.email || req.query.email;
-
-  if (!email) return res.status(401).json({ error: 'Unauthorized' });
+  if (!email) return res.status(401).json({ error: 'Email required' });
 
   try {
     const user = await usersCollection.findOne({ email });
@@ -164,16 +161,15 @@ app.get('/api/balance', async (req, res) => {
 
     res.json({ balance: user.balance || 0 });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch balance' });
+    console.error('❌ Balance error:', err);
+    res.status(500).json({ error: 'Could not retrieve balance' });
   }
 });
 
-// ✅ Transactions Route
+// Transactions history
 app.get('/api/transactions', async (req, res) => {
   const email = req.headers.email || req.query.email;
-
-  if (!email) return res.status(401).json({ error: 'Unauthorized' });
+  if (!email) return res.status(401).json({ error: 'Email required' });
 
   try {
     const transactions = await db.collection('transactions')
@@ -184,12 +180,12 @@ app.get('/api/transactions', async (req, res) => {
 
     res.json(transactions);
   } catch (err) {
-    console.error(err);
+    console.error('❌ Transaction fetch error:', err);
     res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 });
 
-// ✅ Start Server
+// Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
