@@ -20,7 +20,14 @@ let db;
 let usersCollection;
 
 app.use(bodyParser.json());
+
+// Serve static files from public folder
 app.use(express.static('public'));
+
+// ✅ Serve index.html when root URL is accessed
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Connect to MongoDB
 async function connectDB() {
