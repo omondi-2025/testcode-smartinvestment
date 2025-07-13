@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Testcode | Withdraw</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #003366;
+    }
+
+    .wallet-balance {
+      text-align: center;
+      font-weight: bold;
+      color: #4caf50;
+      margin-bottom: 1rem;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.8rem 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    button {
+      background: #003366;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #001f4d;
+    }
+
+    #withdrawMessage {
+      margin-top: 1rem;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .rules {
+      font-size: 0.9rem;
+      color: #555;
+      background: #f9f9f9;
+      padding: 1rem;
+      border-left: 4px solid #003366;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+    }
+
+    .history-table {
+      width: 100%;
+      margin-top: 2rem;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    .history-table th, .history-table td {
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+
+    .history-table th {
+      background: #003366;
+      color: white;
+    }
+
+    .history-table tbody tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+
+    .back-btn {
+      display: block;
+      margin-top: 2rem;
+      text-align: center;
+      color: #003366;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    .back-btn:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Withdraw Funds</h2>
+    <div class="wallet-balance">Wallet Balance: KES <span id="walletBalance">0</span></div>
+
+    <div class="rules">
+      <ul>
+        <li>✅ Minimum withdrawal: <strong>KES 150</strong></li>
+        <li>🕘 Time: <strong>Only between 9:00 AM - 5:00 PM</strong></li>
+        <li>🚫 Limit: <strong>1 withdrawal per day</strong></li>
+        <li>💰 Tax: <strong>18%</strong> deducted automatically</li>
+      </ul>
+    </div>
+
+    <form id="withdrawForm">
+      <input type="number" id="amount" placeholder="Enter amount (KES)" min="150" required />
+	  <p id="taxNotice" style="text-align:center; font-size:0.95rem; color:#555;"></p>
+      <input type="text" id="mpesa" placeholder="M-Pesa Number" readonly />
+      <button type="submit">Submit Withdrawal</button>
+      <div id="withdrawMessage"></div>
+    </form>
+
+    <h3 style="margin-top: 2.5rem; color: #003366;">Withdrawal History</h3>
+    <table class="history-table" id="withdrawHistory">
+      <thead>
+        <tr>
+          <th>Amount (KES)</th>
+          <th>Number</th>
+          <th>Status</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="4">Loading history...</td></tr>
+      </tbody>
+    </table>
+
+    <a href="index.html" class="back-btn">⬅️ Back to Dashboard</a>
+  </div>
+<script>
+  let user = JSON.parse(localStorage.getItem("user")) || JSON.parse(sessionStorage.getItem("user"));
+if (user && user._id && !user.id) {
+  user.id = user._id; // Normalize ID for consistency
+}
+if (!user || !user.id || !user.email) {
+  window.location.href = "login.html";
+}
+
+// Autofill and lock M-Pesa number
+document.getElementById("mpesa").value = user.phone || "";
+document.getElementById("mpesa").readOnly = true;
+const form = document.getElementById("withdrawForm");
+const msg = document.getElementById("withdrawMessage");
+const historyTable = document.querySelector("#withdrawHistory tbody");
+
+async function fetchWallet() {
+  const walletEl = document.getElementById("walletBalance");
+  try {
+    const res = await fetch(`/api/deposit/balance/${user.id}`);
+    const data = await res.json();
+    if (data.success && typeof data.wallet === "number") {
+      walletEl.textContent = data.wallet.toFixed(2);
+      user.wallet = data.wallet;
+      localStorage.setItem("user", JSON.stringify(user));
+    } else {
+      walletEl.textContent = "0.00";
+    }
+  } catch {
+    walletEl.textContent = "❌ Error";
+  }
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const now = new Date();
+  const hour = now.getHours();
+  if (hour < 9 || hour >= 17) {
+    msg.textContent = "❌ Withdrawals are allowed only between 9:00 AM and 5:00 PM.";
+    msg.style.color = "red";
+    return;
+  }
+
+  const amountInput = parseFloat(document.getElementById("amount").value);
+  const mpesa = document.getElementById("mpesa").value.trim();
+
+  if (!amountInput || amountInput < 150 || !/^\d{10,}$/.test(mpesa)) {
+    msg.textContent = "❗ Enter a valid amount (>=150) and M-Pesa number.";
+    msg.style.color = "red";
+    return;
+  }
+
+  if (amountInput > user.wallet) {
+    msg.textContent = "❌ Insufficient wallet balance.";
+    msg.style.color = "red";
+    return;
+  }
+
+  msg.textContent = "⏳ Checking withdrawal status...";
+  msg.style.color = "black";
+
+  try {
+    const check = await fetch(`/api/withdrawal/today?userId=${user.id}`);
+    const result = await check.json();
+    if (result.withdrawnToday) {
+      msg.textContent = "🚫 You’ve already made a withdrawal today.";
+      msg.style.color = "orange";
+      return;
+    }
+  } catch {
+    msg.textContent = "⚠️ Unable to check today’s withdrawal. Try again.";
+    msg.style.color = "red";
+    return;
+  }
+
+  const finalAmount = (amountInput * 0.82).toFixed(2);
+  msg.textContent = `Submitting withdrawal of KES ${finalAmount} (after 18% tax)...`;
+
+  try {
+    const res = await fetch("/api/withdrawal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.id,
+        amount: finalAmount,
+        mpesa
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      msg.textContent = "✅ Withdrawal request submitted successfully 18% Tax will be applied!";
+      msg.style.color = "green";
+      form.reset();
+      fetchWithdrawHistory(); // update table
+      fetchWallet();          // ✅ update wallet after withdrawal
+    } else {
+      msg.textContent = "❌ " + (data.message || "Withdrawal failed.");
+      msg.style.color = "red";
+    }
+  } catch {
+    msg.textContent = "🚫 Server error. Try again.";
+    msg.style.color = "red";
+  }
+});
+
+async function fetchWithdrawHistory() {
+  try {
+    const res = await fetch(`/api/withdrawal/withdrawals?userId=${user.id}`);
+    const data = await res.json();  // 👈 Updated
+
+    const history = data.history || [];  // 👈 Safely extract the array
+
+    if (Array.isArray(history) && history.length > 0) {
+      historyTable.innerHTML = history.map(item => `
+        <tr>
+          <td>${item.amount}</td>
+          <td>${item.mpesa}</td>
+          <td style="color: ${item.status === 'Approved' ? 'green' : item.status === 'Rejected' ? 'red' : 'orange'};">
+            ${item.status}
+          </td>
+          <td>${new Date(item.date).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    } else {
+      historyTable.innerHTML = `<tr><td colspan="4">No withdrawal records yet.</td></tr>`;
+    }
+  } catch {
+    historyTable.innerHTML = `<tr><td colspan="4" style="color:red;">❌ Failed to load history.</td></tr>`;
+  }
+}
+document.getElementById("amount").addEventListener("input", function () {
+  const amt = parseFloat(this.value);
+  const taxEl = document.getElementById("taxNotice");
+  if (!amt || amt < 150) {
+    taxEl.textContent = "";
+    return;
+  }
+  const tax = (amt * 0.18).toFixed(2);
+  const afterTax = (amt * 0.82).toFixed(2);
+  taxEl.textContent = `💸 Tax: KES ${tax} | You will receive: KES ${afterTax}`;
+});
+
+fetchWithdrawHistory();
+fetchWallet(); // ✅ Initial balance load
+  </script>
+</body>
+</html>
