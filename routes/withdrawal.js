@@ -3,7 +3,7 @@ const router = express.Router();
 const Withdrawal = require('../models/Withdrawal');
 const User = require('../models/User');
 
-// POST /api/withdraw - Submit a withdrawal request
+// ✅ POST /api/withdrawal — Submit a withdrawal request
 router.post('/', async (req, res) => {
   const { userId, amount, mpesa } = req.body;
 
@@ -75,7 +75,7 @@ await user.save(); // Save the updated user
   }
 });
 
-// ✅ FIXED: GET /api/withdrawals instead of /api/withdraw
+// ✅ GET /api/withdrawal/withdrawals — Fetch user's withdrawal history
 router.get('/withdrawals', async (req, res) => {
   const { userId } = req.query;
 

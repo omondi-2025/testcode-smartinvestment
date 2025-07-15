@@ -120,7 +120,7 @@
       </ul>
     </div>
 
-    <form id="withdrawForm">
+    <form id="withdrawForm" onsubmit="return false;">
       <input type="number" id="amount" placeholder="Enter amount (KES)" min="150" required />
 	  <p id="taxNotice" style="text-align:center; font-size:0.95rem; color:#555;"></p>
       <input type="text" id="mpesa" placeholder="M-Pesa Number" readonly />
@@ -221,15 +221,17 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
- const finalAmount = (amountInput * 0.82).toFixed(2);
-msg.textContent = `Submitting withdrawal of KES ${finalAmount} (after 18% tax)...`;
+  const tax = amountInput * 0.18;
+const payout = amountInput - tax;
+
+msg.textContent = `Submitting withdrawal of KES ${payout.toFixed(2)} (after 18% tax)...`;
 
 const res = await fetch("/api/withdrawal", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     userId: user.id,
-    amount: finalAmount,   // ❌ wrong
+    amount: amountInput,  // ✅ full amount sent
     mpesa
   })
 });
