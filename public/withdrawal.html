@@ -221,17 +221,15 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  const tax = amountInput * 0.18;
-const payout = amountInput - tax;
-
-msg.textContent = `Submitting withdrawal of KES ${payout.toFixed(2)} (after 18% tax)...`;
+ const finalAmount = (amountInput * 0.82).toFixed(2);
+msg.textContent = `Submitting withdrawal of KES ${finalAmount} (after 18% tax)...`;
 
 const res = await fetch("/api/withdrawal", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
     userId: user.id,
-    amount: amountInput,  // ✅ full amount sent
+    amount: finalAmount,   // ❌ wrong
     mpesa
   })
 });
