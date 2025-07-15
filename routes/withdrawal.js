@@ -61,8 +61,8 @@ router.post('/', async (req, res) => {
 
     await withdrawal.save();
 
-user.wallet -= amount; // Deduct full withdrawal amount from wallet
-user.cashouts = (user.cashouts || 0) + amount; // Increase user's total cashouts
+user.wallet -= amount; // Deduct full amount including tax
+user.cashouts = Number(user.cashouts || 0) + finalAmount; // Track actual amount user received
 await user.save(); // Save the updated user
 
     res.json({
