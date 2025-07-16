@@ -208,7 +208,7 @@ form.addEventListener("submit", async (e) => {
   msg.style.color = "black";
 
   try {
-    const check = await fetch(`/api/withdrawal/today?userId=${user.id}`);
+    const check = await fetch(`/api/withdrawals/today?userId=${user.id}`);
     const result = await check.json();
     if (result.withdrawnToday) {
       msg.textContent = "🚫 You’ve already made a withdrawal today.";
